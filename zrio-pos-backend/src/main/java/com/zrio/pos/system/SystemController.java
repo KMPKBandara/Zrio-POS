@@ -12,4 +12,9 @@ public class SystemController {
     public String ping() {
         return "Zrio POS Backend is running";
     }
+
+    @GetMapping("/version")
+    public String version() {
+        return "Zrio POS v1.0";
+    }
 }
