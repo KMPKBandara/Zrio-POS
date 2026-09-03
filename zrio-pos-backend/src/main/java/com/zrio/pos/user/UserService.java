@@ -3,6 +3,8 @@ package com.zrio.pos.user;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import java.util.Comparator;
+import java.util.List;
 
 import java.util.Locale;
 
@@ -27,6 +29,12 @@ public class UserService {
             String fullName,
             UserRole role
     ) {
+
+        if (username == null || username.isBlank()) {
+            throw new IllegalArgumentException(
+                    "Username cannot be blank"
+            );
+        }
 
         String normalizedUsername =
                 username.trim().toLowerCase(Locale.ROOT);
@@ -68,5 +76,57 @@ public class UserService {
         user.setActive(true);
 
         return userRepository.save(user);
+    }
+
+    @Transactional
+    public User createCashier(
+            String username,
+            String rawPassword,
+            String fullName
+    ) {
+
+        return createUser(
+                username,
+                rawPassword,
+                fullName,
+                UserRole.CASHIER
+        );
+    }
+
+    @Transactional(readOnly = true)
+    public List<User> findAllUsers() {
+
+        return userRepository
+                .findAll()
+                .stream()
+                .sorted(
+                        Comparator.comparing(User::getUsername)
+                )
+                .toList();
+    }
+
+    @Transactional
+    public User changeCashierStatus(
+            Long userId,
+            boolean active
+    ) {
+
+        User user = userRepository
+                .findById(userId)
+                .orElseThrow(() ->
+                        new IllegalArgumentException(
+                                "User not found"
+                        )
+                );
+
+        if (user.getRole() != UserRole.CASHIER) {
+            throw new IllegalArgumentException(
+                    "Only cashier accounts can be enabled or disabled"
+            );
+        }
+
+        user.setActive(active);
+
+        return user;
     }
 }

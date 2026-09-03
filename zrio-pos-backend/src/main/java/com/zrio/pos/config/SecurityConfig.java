@@ -17,6 +17,7 @@ import org.springframework.security.web.context.HttpSessionSecurityContextReposi
 import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.security.web.csrf.CsrfTokenRepository;
 import org.springframework.security.web.csrf.HttpSessionCsrfTokenRepository;
+import org.springframework.http.HttpMethod;
 
 @Configuration
 public class SecurityConfig {
@@ -91,12 +92,35 @@ public class SecurityConfig {
                 )
 
                 .authorizeHttpRequests(auth -> auth
+
                         .requestMatchers(
                                 "/actuator/health",
                                 "/api/system/**",
                                 "/api/auth/csrf",
                                 "/api/auth/login"
                         ).permitAll()
+
+                        .requestMatchers(
+                                "/api/users/**"
+                        ).hasRole("OWNER")
+
+                        .requestMatchers(
+                                HttpMethod.GET,
+                                "/api/categories"
+                        ).hasAnyRole(
+                                "OWNER",
+                                "CASHIER"
+                        )
+
+                        .requestMatchers(
+                                HttpMethod.GET,
+                                "/api/categories/all"
+                        ).hasRole("OWNER")
+
+                        .requestMatchers(
+                                "/api/categories",
+                                "/api/categories/**"
+                        ).hasRole("OWNER")
 
                         .requestMatchers(
                                 "/api/auth/me",
