@@ -93,6 +93,7 @@ public class SecurityConfig {
 
                 .authorizeHttpRequests(auth -> auth
 
+                        // PUBLIC
                         .requestMatchers(
                                 "/actuator/health",
                                 "/api/system/**",
@@ -100,10 +101,12 @@ public class SecurityConfig {
                                 "/api/auth/login"
                         ).permitAll()
 
+                        // OWNER ONLY - USER MANAGEMENT
                         .requestMatchers(
                                 "/api/users/**"
                         ).hasRole("OWNER")
 
+                        // CATEGORY - OWNER + CASHIER CAN READ ACTIVE
                         .requestMatchers(
                                 HttpMethod.GET,
                                 "/api/categories"
@@ -112,21 +115,46 @@ public class SecurityConfig {
                                 "CASHIER"
                         )
 
+                        // CATEGORY - OWNER CAN SEE ALL
                         .requestMatchers(
                                 HttpMethod.GET,
                                 "/api/categories/all"
                         ).hasRole("OWNER")
 
+                        // CATEGORY - OWNER CAN MODIFY
                         .requestMatchers(
                                 "/api/categories",
                                 "/api/categories/**"
                         ).hasRole("OWNER")
 
+                        // PRODUCT - OWNER + CASHIER CAN READ ACTIVE
+                        .requestMatchers(
+                                HttpMethod.GET,
+                                "/api/products"
+                        ).hasAnyRole(
+                                "OWNER",
+                                "CASHIER"
+                        )
+
+                        // PRODUCT - OWNER CAN SEE ALL
+                        .requestMatchers(
+                                HttpMethod.GET,
+                                "/api/products/all"
+                        ).hasRole("OWNER")
+
+                        // PRODUCT - OWNER CAN MODIFY
+                        .requestMatchers(
+                                "/api/products",
+                                "/api/products/**"
+                        ).hasRole("OWNER")
+
+                        // LOGGED-IN USERS
                         .requestMatchers(
                                 "/api/auth/me",
                                 "/api/auth/logout"
                         ).authenticated()
 
+                        // THIS MUST ALWAYS BE LAST
                         .anyRequest().authenticated()
                 )
 
