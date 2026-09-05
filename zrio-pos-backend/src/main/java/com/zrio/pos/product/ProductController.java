@@ -111,4 +111,47 @@ public class ProductController {
             );
         }
     }
+
+    @GetMapping("/lookup")
+    public ProductResponse lookupProduct(
+            @RequestParam String code
+    ) {
+
+        try {
+
+            return productService.lookupProduct(code);
+
+        } catch (NoSuchElementException exception) {
+
+            throw new ResponseStatusException(
+                    HttpStatus.NOT_FOUND,
+                    exception.getMessage()
+            );
+
+        } catch (IllegalArgumentException exception) {
+
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    exception.getMessage()
+            );
+        }
+    }
+
+    @GetMapping("/search")
+    public List<ProductResponse> searchProducts(
+            @RequestParam String q
+    ) {
+
+        try {
+
+            return productService.searchProducts(q);
+
+        } catch (IllegalArgumentException exception) {
+
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    exception.getMessage()
+            );
+        }
+    }
 }

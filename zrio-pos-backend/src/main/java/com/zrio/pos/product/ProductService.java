@@ -266,4 +266,52 @@ public class ProductService {
                 product.isActive()
         );
     }
+
+    @Transactional(readOnly = true)
+    public ProductResponse lookupProduct(String code) {
+
+        if (code == null || code.isBlank()) {
+            throw new IllegalArgumentException(
+                    "Lookup code cannot be blank"
+            );
+        }
+
+        String cleanedCode = code.trim();
+
+        Product product = productRepository
+                .findByBarcodeAndActiveTrue(cleanedCode)
+                .or(() ->
+                        productRepository
+                                .findByItemCodeIgnoreCaseAndActiveTrue(
+                                        cleanedCode
+                                )
+                )
+                .orElseThrow(() ->
+                        new NoSuchElementException(
+                                "Product not found"
+                        )
+                );
+
+        return toResponse(product);
+    }
+
+    @Transactional(readOnly = true)
+    public List<ProductResponse> searchProducts(
+            String query
+    ) {
+
+        if (query == null || query.isBlank()) {
+            throw new IllegalArgumentException(
+                    "Search query cannot be blank"
+            );
+        }
+
+        String cleanedQuery = query.trim();
+
+        return productRepository
+                .searchActiveProducts(cleanedQuery)
+                .stream()
+                .map(this::toResponse)
+                .toList();
+    }
 }

@@ -130,7 +130,9 @@ public class SecurityConfig {
                         // PRODUCT - OWNER + CASHIER CAN READ ACTIVE
                         .requestMatchers(
                                 HttpMethod.GET,
-                                "/api/products"
+                                "/api/products",
+                                "/api/products/lookup",
+                                "/api/products/search"
                         ).hasAnyRole(
                                 "OWNER",
                                 "CASHIER"
