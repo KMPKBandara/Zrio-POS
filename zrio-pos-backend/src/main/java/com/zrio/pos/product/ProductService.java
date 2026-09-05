@@ -4,24 +4,28 @@ import com.zrio.pos.category.Category;
 import com.zrio.pos.category.CategoryRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Locale;
 import java.util.NoSuchElementException;
+import com.zrio.pos.inventory.Inventory;
+import com.zrio.pos.inventory.InventoryRepository;
 
 @Service
 public class ProductService {
 
     private final ProductRepository productRepository;
     private final CategoryRepository categoryRepository;
+    private final InventoryRepository inventoryRepository;
 
     public ProductService(
             ProductRepository productRepository,
-            CategoryRepository categoryRepository
+            CategoryRepository categoryRepository,
+            InventoryRepository inventoryRepository
     ) {
         this.productRepository = productRepository;
         this.categoryRepository = categoryRepository;
+        this.inventoryRepository = inventoryRepository;
     }
 
     @Transactional
@@ -59,6 +63,13 @@ public class ProductService {
 
         Product saved =
                 productRepository.save(product);
+
+        Inventory inventory = new Inventory();
+
+        inventory.setProduct(saved);
+        inventory.setQuantityOnHand(0);
+
+        inventoryRepository.save(inventory);
 
         return toResponse(saved);
     }

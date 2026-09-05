@@ -156,6 +156,15 @@ public class SecurityConfig {
                                 "/api/auth/logout"
                         ).authenticated()
 
+                        .requestMatchers(
+                                HttpMethod.GET,
+                                "/api/inventory",
+                                "/api/inventory/**"
+                        ).hasAnyRole(
+                                "OWNER",
+                                "CASHIER"
+                        )
+
                         // THIS MUST ALWAYS BE LAST
                         .anyRequest().authenticated()
                 )
