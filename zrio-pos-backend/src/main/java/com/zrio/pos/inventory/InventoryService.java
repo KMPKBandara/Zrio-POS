@@ -2,24 +2,27 @@ package com.zrio.pos.inventory;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
 import java.util.List;
 import java.util.NoSuchElementException;
+import com.zrio.pos.user.User;
+import com.zrio.pos.user.UserRepository;
 
 @Service
 public class InventoryService {
 
     private final InventoryRepository inventoryRepository;
-    private final StockMovementRepository
-            stockMovementRepository;
+    private final StockMovementRepository stockMovementRepository;
+    private final UserRepository userRepository;
 
     public InventoryService(
             InventoryRepository inventoryRepository,
-            StockMovementRepository stockMovementRepository
+            StockMovementRepository stockMovementRepository,
+            UserRepository userRepository
     ) {
         this.inventoryRepository = inventoryRepository;
         this.stockMovementRepository =
                 stockMovementRepository;
+        this.userRepository = userRepository;
     }
 
     @Transactional(readOnly = true)
@@ -128,5 +131,216 @@ public class InventoryService {
 
                 movement.getCreatedAt()
         );
+    }
+
+    @Transactional
+    public StockChangeResponse stockIn(
+            Long productId,
+            int quantity,
+            String note,
+            String username
+    ) {
+
+        if (quantity <= 0) {
+            throw new IllegalArgumentException(
+                    "Stock-in quantity must be greater than zero"
+            );
+        }
+
+        Inventory inventory =
+                findInventoryForUpdate(productId);
+
+        User user =
+                findUser(username);
+
+        int newQuantity = calculateNewQuantity(
+                inventory.getQuantityOnHand(),
+                quantity
+        );
+
+        inventory.setQuantityOnHand(newQuantity);
+
+        StockMovement movement =
+                createMovement(
+                        inventory,
+                        StockMovementType.STOCK_IN,
+                        quantity,
+                        newQuantity,
+                        cleanOptionalNote(note),
+                        user
+                );
+
+        return new StockChangeResponse(
+                toInventoryResponse(inventory),
+                toMovementResponse(movement)
+        );
+    }
+
+    @Transactional
+    public StockChangeResponse adjustStock(
+            Long productId,
+            int quantityChange,
+            String note,
+            String username
+    ) {
+
+        if (quantityChange == 0) {
+            throw new IllegalArgumentException(
+                    "Adjustment quantity cannot be zero"
+            );
+        }
+
+        String cleanedNote =
+                cleanRequiredNote(note);
+
+        Inventory inventory =
+                findInventoryForUpdate(productId);
+
+        User user =
+                findUser(username);
+
+        int newQuantity =
+                calculateNewQuantity(
+                        inventory.getQuantityOnHand(),
+                        quantityChange
+                );
+
+        StockMovementType movementType;
+
+        if (quantityChange > 0) {
+
+            movementType =
+                    StockMovementType.ADJUSTMENT_IN;
+
+        } else {
+
+            movementType =
+                    StockMovementType.ADJUSTMENT_OUT;
+        }
+
+        inventory.setQuantityOnHand(newQuantity);
+
+        StockMovement movement =
+                createMovement(
+                        inventory,
+                        movementType,
+                        quantityChange,
+                        newQuantity,
+                        cleanedNote,
+                        user
+                );
+
+        return new StockChangeResponse(
+                toInventoryResponse(inventory),
+                toMovementResponse(movement)
+        );
+    }
+
+    private Inventory findInventoryForUpdate(
+            Long productId
+    ) {
+
+        return inventoryRepository
+                .findByProductIdForUpdate(productId)
+                .orElseThrow(() ->
+                        new NoSuchElementException(
+                                "Inventory not found"
+                        )
+                );
+    }
+
+    private int calculateNewQuantity(
+            int currentQuantity,
+            int quantityChange
+    ) {
+
+        long calculated =
+                (long) currentQuantity
+                        + quantityChange;
+
+        if (calculated < 0) {
+            throw new IllegalArgumentException(
+                    "Stock cannot become negative"
+            );
+        }
+
+        if (calculated > Integer.MAX_VALUE) {
+            throw new IllegalArgumentException(
+                    "Stock quantity is too large"
+            );
+        }
+
+        return (int) calculated;
+    }
+
+    private User findUser(String username) {
+
+        return userRepository
+                .findByUsernameIgnoreCase(username)
+                .orElseThrow(() ->
+                        new IllegalStateException(
+                                "Authenticated user not found"
+                        )
+                );
+    }
+
+    private StockMovement createMovement(
+            Inventory inventory,
+            StockMovementType movementType,
+            int quantityChange,
+            int quantityAfter,
+            String note,
+            User user
+    ) {
+
+        StockMovement movement =
+                new StockMovement();
+
+        movement.setProduct(
+                inventory.getProduct()
+        );
+
+        movement.setMovementType(
+                movementType
+        );
+
+        movement.setQuantityChange(
+                quantityChange
+        );
+
+        movement.setQuantityAfter(
+                quantityAfter
+        );
+
+        movement.setNote(note);
+
+        movement.setCreatedBy(user);
+
+        return stockMovementRepository
+                .save(movement);
+    }
+
+    private String cleanOptionalNote(
+            String note
+    ) {
+
+        if (note == null || note.isBlank()) {
+            return null;
+        }
+
+        return note.trim();
+    }
+
+    private String cleanRequiredNote(
+            String note
+    ) {
+
+        if (note == null || note.isBlank()) {
+            throw new IllegalArgumentException(
+                    "Adjustment note cannot be blank"
+            );
+        }
+
+        return note.trim();
     }
 }

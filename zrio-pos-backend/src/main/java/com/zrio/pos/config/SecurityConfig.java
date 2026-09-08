@@ -165,6 +165,11 @@ public class SecurityConfig {
                                 "CASHIER"
                         )
 
+                        .requestMatchers(
+                                HttpMethod.POST,
+                                "/api/inventory/**"
+                        ).hasRole("OWNER")
+
                         // THIS MUST ALWAYS BE LAST
                         .anyRequest().authenticated()
                 )
