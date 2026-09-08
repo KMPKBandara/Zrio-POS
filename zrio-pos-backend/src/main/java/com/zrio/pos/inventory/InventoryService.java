@@ -76,6 +76,19 @@ public class InventoryService {
             Inventory inventory
     ) {
 
+        int quantity =
+                inventory.getQuantityOnHand();
+
+        int threshold =
+                inventory.getProduct()
+                        .getLowStockThreshold();
+
+        StockStatus stockStatus =
+                determineStockStatus(
+                        quantity,
+                        threshold
+                );
+
         return new InventoryResponse(
                 inventory.getProduct().getId(),
                 inventory.getProduct().getItemCode(),
@@ -89,10 +102,10 @@ public class InventoryService {
                         .getCategory()
                         .getName(),
 
-                inventory.getQuantityOnHand(),
+                quantity,
+                threshold,
 
-                inventory.getProduct()
-                        .getLowStockThreshold()
+                stockStatus
         );
     }
 
@@ -342,5 +355,65 @@ public class InventoryService {
         }
 
         return note.trim();
+    }
+
+    private StockStatus determineStockStatus(
+            int quantity,
+            int lowStockThreshold
+    ) {
+
+        if (quantity == 0) {
+            return StockStatus.OUT_OF_STOCK;
+        }
+
+        if (quantity <= lowStockThreshold) {
+            return StockStatus.LOW_STOCK;
+        }
+
+        return StockStatus.IN_STOCK;
+    }
+
+    @Transactional(readOnly = true)
+    public List<InventoryResponse> findLowStock() {
+
+        return inventoryRepository
+                .findLowStockActiveInventory()
+                .stream()
+                .map(this::toInventoryResponse)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<InventoryResponse> findOutOfStock() {
+
+        return inventoryRepository
+                .findByProductActiveTrueAndQuantityOnHandOrderByProductNameAsc(
+                        0
+                )
+                .stream()
+                .map(this::toInventoryResponse)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<InventoryResponse> searchInventory(
+            String query
+    ) {
+
+        if (query == null || query.isBlank()) {
+
+            throw new IllegalArgumentException(
+                    "Search query cannot be blank"
+            );
+        }
+
+        String cleanedQuery =
+                query.trim();
+
+        return inventoryRepository
+                .searchActiveInventory(cleanedQuery)
+                .stream()
+                .map(this::toInventoryResponse)
+                .toList();
     }
 }

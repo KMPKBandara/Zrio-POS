@@ -28,4 +28,37 @@ public interface InventoryRepository
     Optional<Inventory> findByProductIdForUpdate(
             @Param("productId") Long productId
     );
+
+    @Query("""
+        SELECT i
+        FROM Inventory i
+        WHERE i.product.active = true
+          AND i.quantityOnHand > 0
+          AND i.quantityOnHand
+                <= i.product.lowStockThreshold
+        ORDER BY i.product.name ASC
+        """)
+    List<Inventory> findLowStockActiveInventory();
+
+    List<Inventory>
+    findByProductActiveTrueAndQuantityOnHandOrderByProductNameAsc(
+            int quantityOnHand
+    );
+
+    @Query("""
+        SELECT i
+        FROM Inventory i
+        WHERE i.product.active = true
+          AND (
+              LOWER(i.product.name)
+                  LIKE LOWER(CONCAT('%', :query, '%'))
+              OR
+              LOWER(i.product.itemCode)
+                  LIKE LOWER(CONCAT('%', :query, '%'))
+          )
+        ORDER BY i.product.name ASC
+        """)
+    List<Inventory> searchActiveInventory(
+            @Param("query") String query
+    );
 }

@@ -10,7 +10,9 @@ public record InventoryResponse(
         String categoryName,
 
         int quantityOnHand,
-        int lowStockThreshold
+        int lowStockThreshold,
+
+        StockStatus stockStatus
 
 ) {
 }

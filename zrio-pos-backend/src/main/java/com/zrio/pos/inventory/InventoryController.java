@@ -134,4 +134,35 @@ public class InventoryController {
             );
         }
     }
+
+    @GetMapping("/low-stock")
+    public List<InventoryResponse> getLowStock() {
+
+        return inventoryService.findLowStock();
+    }
+
+    @GetMapping("/out-of-stock")
+    public List<InventoryResponse> getOutOfStock() {
+
+        return inventoryService.findOutOfStock();
+    }
+
+    @GetMapping("/search")
+    public List<InventoryResponse> searchInventory(
+            @RequestParam String q
+    ) {
+
+        try {
+
+            return inventoryService
+                    .searchInventory(q);
+
+        } catch (IllegalArgumentException exception) {
+
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    exception.getMessage()
+            );
+        }
+    }
 }
