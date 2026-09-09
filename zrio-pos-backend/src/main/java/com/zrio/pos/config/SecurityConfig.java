@@ -170,6 +170,19 @@ public class SecurityConfig {
                                 "/api/inventory/**"
                         ).hasRole("OWNER")
 
+                        .requestMatchers(
+                                "/api/sales",
+                                "/api/sales/**"
+                        ).hasAnyRole(
+                                "OWNER",
+                                "CASHIER"
+                        )
+
+                        .requestMatchers(
+                                "/api/auth/me",
+                                "/api/auth/logout"
+                        ).authenticated()
+
                         // THIS MUST ALWAYS BE LAST
                         .anyRequest().authenticated()
                 )
